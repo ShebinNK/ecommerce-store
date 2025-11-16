@@ -31,28 +31,32 @@ export const getFeaturedProducts = async (req, res) => {
     }
 }
 export const createProduct = async (req, res) => {
-    try {
-        const {name,description,price,image,category} = req.body;
-        let cloudinaryResponse = null;
-        if(image){
-            await cloudinary.uploader.upload(image,{folder:"products"})
-        }
-        const product = await Product.create({
-            name,
-            description,
-            price,
-            image:cloudinaryResponse?.secure_url ? cloudinaryResponse.secure_url : "",
-            category,
-        })
-        res.status(201).json({product});
-    } catch (error) {
-        console.log("error in createProduct controller",error.message);
-        res.status(500).json({message:"Server Error",error:error.message})      
-    }
-}
+	try {
+		const { name, description, price, image, category } = req.body;
+
+		let cloudinaryResponse = null;
+
+		if (image) {
+			cloudinaryResponse = await cloudinary.uploader.upload(image, { folder: "products" });
+		}
+
+		const product = await Product.create({
+			name,
+			description,
+			price,
+			image: cloudinaryResponse?.secure_url ? cloudinaryResponse.secure_url : "",
+			category,
+		});
+
+		res.status(201).json(product);
+	} catch (error) {
+		console.log("Error in createProduct controller", error.message);
+		res.status(500).json({ message: "Server error", error: error.message });
+	}
+};
 export const deleteProduct = async (req, res) => {
     try {
-        const product = await product.findById(req.params.id);
+        const product = await Product.findById(req.params.id);
         if(!product){
             return res.status(404).json({message:"Product not found"});
         }
@@ -66,7 +70,7 @@ export const deleteProduct = async (req, res) => {
 
             }
         }
-        await product.findByIdAndDelete(req.params.id);
+        await Product.findByIdAndDelete(req.params.id);
         res.json({message:"Product deleted successfully"});
     } catch (error) {
         console.log("error in deleteProduct controller",error.message);
