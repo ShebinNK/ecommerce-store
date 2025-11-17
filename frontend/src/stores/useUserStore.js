@@ -66,4 +66,59 @@ export const useUserStore = create((set) => ({
       set({ user: null, checkingAuth: false });
     }
   },
+
+  refreshToken: async () => {
+		// Prevent multiple simultaneous refresh attempts
+		if (get().checkingAuth) return;
+
+		set({ checkingAuth: true });
+		try {
+			const response = await axios.post("/auth/refresh-token");
+			set({ checkingAuth: false });
+			return response.data;
+		} catch (error) {
+			set({ user: null, checkingAuth: false });
+			throw error;
+		}
+	},
 }));
+
+// Axios interceptor for token refresh
+let refreshPromise = null;
+
+axios.interceptors.response.use(
+	(response) => response,
+	async (error) => {
+		const originalRequest = error.config;
+		
+		// Skip refresh for auth endpoints (profile check, refresh-token, login, signup)
+		const isAuthEndpoint = originalRequest.url?.includes('/auth/profile') || 
+		                       originalRequest.url?.includes('/auth/refresh-token') ||
+		                       originalRequest.url?.includes('/auth/login') ||
+		                       originalRequest.url?.includes('/auth/signup');
+		
+		if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+			originalRequest._retry = true;
+
+			try {
+				// If a refresh is already in progress, wait for it to complete
+				if (refreshPromise) {
+					await refreshPromise;
+					return axios(originalRequest);
+				}
+
+				// Start a new refresh process
+				refreshPromise = useUserStore.getState().refreshToken();
+				await refreshPromise;
+				refreshPromise = null;
+
+				return axios(originalRequest);
+			} catch (refreshError) {
+				// If refresh fails, redirect to login or handle as needed
+				useUserStore.getState().logout();
+				return Promise.reject(refreshError);
+			}
+		}
+		return Promise.reject(error);
+	}
+);
