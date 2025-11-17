@@ -24,7 +24,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/payments", paymentRoutes);
-app.use("api/analytics", analyticsRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 app.listen(5000, () => {
   console.log("Server is running on http://localhost:" + PORT);
